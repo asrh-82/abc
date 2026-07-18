@@ -1,0 +1,29 @@
+{
+  "events": [
+    {
+      "id": 1,
+      "name": "Autism Basketball Community Project",
+      "date": "January 12, 2025", "time": "8:30 AM",
+      "location": "Deem Hills Recreation Area", "cost": "$15 per team",
+      "partner": "Phoenix Jewel of the East Lions Club",
+      "fundsRaised": "$805", "status": "completed", "capacity": null
+    },
+    {
+      "id": 2,
+      "name": "Autism Awareness Hike",
+      "date": "November 15, 2025", "time": "7:30 AM",
+      "location": "Thunderbird Conservation Park", "cost": "$5 per person",
+      "partner": "Phoenix Jewel of the East Lions Club",
+      "fundsRaised": "", "status": "completed", "capacity": null
+    },
+    {
+      "id": 3,
+      "name": "Community Tennis Tournament",
+      "date": "August 30, 2026", "time": "7:30 AM",
+      "location": "Rose Mofford Sports Complex", "cost": "$10 per player",
+      "partner": "SEWA Phoenix and ACE Tennis Academy",
+      "fundsRaised": "", "status": "open", "capacity": 64
+    }
+  ],
+  "registrations": []
+}
