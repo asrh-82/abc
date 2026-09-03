@@ -12,10 +12,12 @@
 ## Phase 4 — Organizer operations
 
 - Protected organizer sign-in with organization-owned accounts and MFA.
-- Create, edit, publish, close, and cancel events without editing source files.
+- Create, validate, edit, publish, close, and cancel events without editing source files.
+- Track an event end time separately from its registration cutoff so an event is not marked complete at kickoff.
 - Attendee totals and CSV export with audit logging.
 - Confirmation and update emails that do not block a successful registration.
 - Protected access, attendee export, and a documented restore process.
+- Do not open public registration until an organizer can export and cancel registrations without raw database access.
 
 ## Phase 5 — Payments and event-day tools
 

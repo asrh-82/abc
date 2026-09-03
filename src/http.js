@@ -62,6 +62,10 @@ function formatEventDate(event) {
       day: '2-digit',
       timeZone: event.timezone,
     }).format(date),
+    year: new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      timeZone: event.timezone,
+    }).format(date),
     fullDate: new Intl.DateTimeFormat('en-US', {
       weekday: 'long',
       month: 'long',

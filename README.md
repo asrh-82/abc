@@ -2,6 +2,8 @@
 
 ABC's public event and impact website. Phase 3 adds a short event-registration flow and a versioned API that a future iOS app can reuse.
 
+When no future event is confirmed, the public site switches to an impact-first experience and does not show a registration call to action. `npm run build` produces that safe static version for previews; the registration server remains the source for a future durable deployment.
+
 ## Local setup
 
 Requirements: Node.js 22.13 or newer.

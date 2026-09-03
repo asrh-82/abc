@@ -76,6 +76,33 @@ test('stale open events never appear as upcoming', async (t) => {
 
   assert.equal(response.status, 200);
   assert.equal(body.meta.count, 0);
+  assert.equal(response.headers.get('cache-control'), 'no-store');
+});
+
+test('homepage is impact-first when no event is confirmed', async (t) => {
+  const { baseUrl } = await startTestApp(t);
+
+  const response = await fetch(`${baseUrl}/`);
+  const html = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.match(html, /No upcoming event announced/);
+  assert.match(html, /There is no signup open right now/);
+  assert.match(html, />See our impact</);
+  assert.doesNotMatch(html, />Find an event</);
+});
+
+test('events page states that no upcoming event has been announced', async (t) => {
+  const { baseUrl } = await startTestApp(t);
+
+  const response = await fetch(`${baseUrl}/events`);
+  const html = await response.text();
+
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('cache-control'), 'no-store');
+  assert.match(html, /No upcoming event has been announced/);
+  assert.match(html, /id="past-events"/);
+  assert.doesNotMatch(html, /View recap/);
 });
 
 test('a past closed event is normalized as completed', async (t) => {

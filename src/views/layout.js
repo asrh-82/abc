@@ -32,6 +32,7 @@ function page({ title, description, activePath = '', head = '', body }) {
         <span>Autism: Bringing Change</span>
       </a>
       <nav class="desktop-nav" aria-label="Primary navigation">
+        <a href="/#about">About</a>
         ${navLink('/events', 'Events', activePath)}
         ${navLink('/impact', 'Our impact', activePath)}
         <a class="nav-contact" href="mailto:autismbringingchange@gmail.com">Contact</a>
@@ -39,6 +40,7 @@ function page({ title, description, activePath = '', head = '', body }) {
       <details class="mobile-nav">
         <summary aria-label="Open navigation">Menu</summary>
         <nav aria-label="Mobile navigation">
+          <a href="/#about">About</a>
           ${navLink('/events', 'Events', activePath)}
           ${navLink('/impact', 'Our impact', activePath)}
           <a href="mailto:autismbringingchange@gmail.com">Contact</a>

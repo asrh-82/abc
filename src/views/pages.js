@@ -4,9 +4,10 @@ const { page } = require('./layout');
 
 function eventDateBlock(event) {
   const date = formatEventDate(event);
-  return `<time class="date-block" datetime="${escapeHtml(event.startsAt)}">
+  return `<time class="date-block" datetime="${escapeHtml(event.startsAt)}" aria-label="${escapeHtml(date.fullDate)}">
     <span>${escapeHtml(date.month)}</span>
     <strong>${escapeHtml(date.day)}</strong>
+    <small>${escapeHtml(date.year)}</small>
   </time>`;
 }
 
@@ -46,13 +47,18 @@ function eventRow(event, { past = false } = {}) {
       <p class="event-line">${escapeHtml(date.time)} <span aria-hidden="true">·</span> ${escapeHtml(event.locationName)}</p>
       ${past && event.fundsRaisedCents !== null ? `<p class="raised">${escapeHtml(formatMoney(event.fundsRaisedCents))} raised</p>` : ''}
     </div>
-    <a class="text-link" href="/events/${encodeURIComponent(event.slug)}">${past ? 'View recap' : 'View details'} <span aria-hidden="true">→</span></a>
+    <a class="text-link" href="/events/${encodeURIComponent(event.slug)}">View details <span aria-hidden="true">→</span></a>
   </article>`;
 }
 
 function homePage({ upcoming, past }) {
   const nextEvent = upcoming.find((event) => event.status !== 'cancelled') || null;
   const latestPast = past.find((event) => event.status === 'completed') || null;
+  const completedEvents = past.filter((event) => event.status === 'completed');
+  const recordedRaised = completedEvents.reduce(
+    (total, event) => total + (event.fundsRaisedCents || 0),
+    0
+  );
   const nextEventAction = nextEvent?.registrationOpen ? 'View event and register' : 'View event details';
   const nextEventPanel = nextEvent
     ? `<aside class="next-event" aria-label="Next event">
@@ -61,23 +67,48 @@ function homePage({ upcoming, past }) {
         <p>${escapeHtml(nextEvent.locationName)}</p>
         <a class="button button-sun" href="/events/${encodeURIComponent(nextEvent.slug)}">${nextEventAction}</a>
       </aside>`
-    : `<aside class="next-event next-event-quiet" aria-label="Event status">
-        <p class="eyebrow">Next event</p>
-        <h2>We’re planning what comes next.</h2>
-        <p>The latest listed event has ended. See what ABC has already brought to the community.</p>
-        <a class="button button-sun" href="/events">Explore all events</a>
+    : `<aside class="next-event next-event-quiet" aria-label="Current event status">
+        <p class="eyebrow">Current status</p>
+        <p class="planning-status"><span aria-hidden="true"></span>No upcoming event announced</p>
+        <h2>Planning is underway.</h2>
+        <p>There is no signup open right now. The date, location, cost, and registration link will appear here once the next event is confirmed.</p>
+        <a class="button button-sun" href="/events#past-events">See past events</a>
       </aside>`;
+
+  const primaryHeroAction = nextEvent
+    ? '<a class="button button-light" href="/events">Find an event</a>'
+    : '<a class="button button-light" href="/impact">See our impact</a>';
+
+  const purposeContent = nextEvent
+    ? `<div>
+        <p class="eyebrow eyebrow-dark">How registration works</p>
+        <h2>From event page to confirmed spot.</h2>
+      </div>
+      <ol class="process-list">
+        <li><span>01</span><div><strong>Choose an event</strong><p>See the date, location, cost, and available spots before you commit.</p></div></li>
+        <li><span>02</span><div><strong>Reserve your spot</strong><p>Enter one contact name, email address, and the number of spots you need.</p></div></li>
+        <li><span>03</span><div><strong>Get confirmation</strong><p>Your confirmation appears immediately. No account is required.</p></div></li>
+      </ol>`
+    : `<div>
+        <p class="eyebrow eyebrow-dark">How ABC creates impact</p>
+        <h2>Local events. Local partners. A clear purpose.</h2>
+      </div>
+      <ol class="process-list">
+        <li><span>01</span><div><strong>Bring the community together</strong><p>ABC has organized basketball, hiking, and tennis events across the Phoenix area.</p></div></li>
+        <li><span>02</span><div><strong>Work with local organizations</strong><p>Past collaborators include the Phoenix Jewel of the East Lions Club, SEWA Phoenix, and ACE Tennis Academy.</p></div></li>
+        <li><span>03</span><div><strong>Support access to therapy</strong><p>Event proceeds help fund autism therapy through AZA United.</p></div></li>
+      </ol>`;
 
   const body = `
   <section class="hero">
     <div class="shell hero-grid">
       <div class="hero-copy">
-        <p class="eyebrow">Youth-led in Phoenix, Arizona</p>
-        <h1>Community events that fund autism therapy.</h1>
-        <p class="hero-lede">Autism: Bringing Change brings families, students, and supporters together around events with a direct purpose.</p>
+        <p class="eyebrow">Phoenix, Arizona · Youth-led</p>
+        <h1>Building blocks for a better future.</h1>
+        <p class="hero-lede">Autism: Bringing Change organizes community events that help fund autism therapy for Phoenix families.</p>
         <div class="hero-actions">
-          <a class="button button-light" href="/events">Find an event</a>
-          <a class="text-link text-link-light" href="/impact">See our impact <span aria-hidden="true">→</span></a>
+          ${primaryHeroAction}
+          <a class="text-link text-link-light" href="/events#past-events">Browse past events <span aria-hidden="true">→</span></a>
         </div>
       </div>
       ${nextEventPanel}
@@ -85,26 +116,32 @@ function homePage({ upcoming, past }) {
   </section>
   <section class="purpose-section">
     <div class="shell purpose-grid">
-      <div>
-        <p class="eyebrow eyebrow-dark">How ABC events work</p>
-        <h2>See the details. Reserve a spot. Show up.</h2>
-      </div>
-      <ol class="process-list">
-        <li><span>01</span><div><strong>Choose an event</strong><p>See the date, location, cost, and available spots before you commit.</p></div></li>
-        <li><span>02</span><div><strong>Reserve your spot</strong><p>A short registration keeps the process simple for families and participants.</p></div></li>
-        <li><span>03</span><div><strong>Attend the event</strong><p>Your participation helps ABC raise money for autism therapy.</p></div></li>
-      </ol>
+      ${purposeContent}
     </div>
   </section>
+  <section class="about-section" id="about"><div class="shell about-grid">
+    <div>
+      <p class="eyebrow">About ABC</p>
+      <h2>A youth-led initiative built around participation.</h2>
+    </div>
+    <div class="about-copy">
+      <p>ABC gives students, families, and local organizations a practical way to support autism therapy: come together, run a strong event, and direct the proceeds toward care.</p>
+      <dl class="about-facts">
+        <div><dt>Based in</dt><dd>Phoenix, Arizona</dd></div>
+        <div><dt>Events documented</dt><dd>${completedEvents.length}</dd></div>
+        <div><dt>Publicly recorded</dt><dd>${escapeHtml(recordedRaised > 0 ? `${formatMoney(recordedRaised)}+ raised` : 'Impact reporting in progress')}</dd></div>
+      </dl>
+    </div>
+  </div></section>
   ${latestPast ? `<section class="latest-section"><div class="shell section-grid">
     <div>
-      <p class="eyebrow eyebrow-dark">Latest completed event</p>
+      <p class="eyebrow eyebrow-dark">Most recent event</p>
       <h2>${escapeHtml(latestPast.name)}</h2>
       <p>${escapeHtml(latestPast.summary)}</p>
     </div>
     <div class="latest-details">
       ${eventMeta(latestPast, { compact: true })}
-      <a class="button button-dark" href="/events/${encodeURIComponent(latestPast.slug)}">View the event recap</a>
+      <a class="button button-dark" href="/events/${encodeURIComponent(latestPast.slug)}">View event details</a>
     </div>
   </div></section>` : ''}`;
 
@@ -117,24 +154,25 @@ function homePage({ upcoming, past }) {
 }
 
 function eventsPage({ upcoming, past }) {
+  const hasUpcoming = upcoming.length > 0;
   const upcomingMarkup = upcoming.length
     ? upcoming.map((event) => eventRow(event)).join('')
     : `<div class="empty-state">
-        <p class="eyebrow eyebrow-dark">No registration open today</p>
-        <h2>The next event is being planned.</h2>
-        <p>ABC will publish the date, location, cost, and signup here as soon as they are confirmed.</p>
-        <a class="text-link" href="mailto:autismbringingchange@gmail.com">Ask about upcoming events <span aria-hidden="true">→</span></a>
+        <p class="eyebrow eyebrow-dark">Current status</p>
+        <h2>No upcoming event has been announced.</h2>
+        <p>ABC is working on what comes next. Once an event is confirmed, its date, location, cost, availability, and signup will all live on this page.</p>
+        <a class="text-link" href="mailto:autismbringingchange@gmail.com?subject=ABC%20events">Contact ABC <span aria-hidden="true">→</span></a>
       </div>`;
 
   const body = `<header class="page-intro"><div class="shell intro-grid">
-      <div><p class="eyebrow eyebrow-dark">Events</p><h1>Everything you need before you register.</h1></div>
-      <p>See the date, time, location, cost, and availability up front. When registration opens, one short form reserves your spot.</p>
+      <div><p class="eyebrow eyebrow-dark">Events</p><h1>${hasUpcoming ? 'Everything you need before you register.' : 'Past events now. Fast signup when the next one opens.'}</h1></div>
+      <p>${hasUpcoming ? 'See the date, time, location, cost, and availability up front. When registration opens, one short form reserves your spot.' : 'Nothing is open for registration today. The full event record stays available below while ABC plans what comes next.'}</p>
     </div></header>
     <section class="events-section"><div class="shell">
-      <div class="section-heading"><h2>Upcoming</h2><span>${upcoming.length} listed</span></div>
+      <div class="section-heading"><h2>Upcoming</h2><span>${upcoming.length} ${upcoming.length === 1 ? 'event' : 'events'}</span></div>
       <div class="event-list">${upcomingMarkup}</div>
     </div></section>
-    <section class="events-section events-past"><div class="shell">
+    <section class="events-section events-past" id="past-events"><div class="shell">
       <div class="section-heading"><h2>Past events</h2><span>${past.length} documented</span></div>
       <div class="event-list">${past.map((event) => eventRow(event, { past: true })).join('')}</div>
     </div></section>`;
@@ -152,7 +190,7 @@ function eventDetailPage(event, { notice = '' } = {}) {
     not_yet_open: ['Registration opens soon.', 'Check back when the registration window begins.'],
     full: ['This event is full.', 'Registration has reached the available capacity.'],
     closed: ['Registration is closed.', 'Explore current listings to find another ABC event.'],
-    completed: ['This event has ended.', 'Explore current listings to find the next ABC event.'],
+    completed: ['This event has ended.', 'See ABC’s impact or browse the other completed events.'],
     cancelled: ['This event was cancelled.', 'Explore current listings to find another ABC event.'],
   };
   const closedMessage = closedMessages[event.registrationState] || closedMessages.closed;
@@ -167,7 +205,7 @@ function eventDetailPage(event, { notice = '' } = {}) {
         <p class="eyebrow eyebrow-dark">${statusLabel(event)}</p>
         <h2>${closedMessage[0]}</h2>
         <p>${closedMessage[1]}</p>
-        <a class="button button-dark" href="/events">View all events</a>
+        <a class="button button-dark" href="${event.registrationState === 'completed' ? '/impact' : '/events'}">${event.registrationState === 'completed' ? 'See ABC’s impact' : 'View all events'}</a>
       </aside>`;
   const funds = formatMoney(event.fundsRaisedCents);
 
@@ -299,15 +337,15 @@ function confirmationPage(registration, { duplicate = false } = {}) {
 
 function impactPage(past) {
   const recordedRaised = past.reduce((total, event) => total + (event.fundsRaisedCents || 0), 0);
-  const partnerNames = [...new Set(past.map((event) => event.partner).filter(Boolean))];
+  const partnerCollaborations = new Set(past.map((event) => event.partner).filter(Boolean)).size;
   const body = `<header class="page-intro impact-intro"><div class="shell intro-grid">
-      <div><p class="eyebrow eyebrow-dark">Our impact</p><h1>The work so far.</h1></div>
-      <p>ABC’s public record starts with the work: the events held, the community partners involved, and the funds documented for autism therapy.</p>
+      <div><p class="eyebrow eyebrow-dark">Our impact</p><h1>The work, documented.</h1></div>
+      <p>Every figure here is tied to ABC’s public event record. Events without a verified fundraising figure are listed without one.</p>
     </div></header>
     <section class="impact-summary"><div class="shell impact-stat-grid">
       <div><strong>${past.length}</strong><span>events documented</span></div>
-      <div><strong>${partnerNames.length}</strong><span>community partner groups</span></div>
-      <div><strong>${escapeHtml(recordedRaised > 0 ? `${formatMoney(recordedRaised)}+` : '$0')}</strong><span>recorded for autism therapy</span></div>
+      <div><strong>${partnerCollaborations}</strong><span>distinct partner collaborations</span></div>
+      <div><strong>${escapeHtml(recordedRaised > 0 ? `${formatMoney(recordedRaised)}+` : '—')}</strong><span>publicly recorded as raised</span></div>
     </div></section>
     <section class="impact-timeline"><div class="shell">
       <div class="section-heading"><h2>Event record</h2><span>Newest first</span></div>

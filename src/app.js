@@ -147,10 +147,16 @@ function createApp({
   };
 
   app.get('/health', (req, res) => {
-    res.json({ ok: true });
+    try {
+      repositories.events.list();
+      return res.json({ ok: true });
+    } catch {
+      return res.status(503).json({ ok: false });
+    }
   });
 
   app.get('/api/v1/events', (req, res) => {
+    res.set('Cache-Control', 'no-store');
     const { upcoming, past } = getEventCollections();
     const scope = String(req.query.scope || 'upcoming');
     if (!['upcoming', 'past', 'all'].includes(scope)) {
@@ -166,6 +172,7 @@ function createApp({
   });
 
   app.get('/api/v1/events/:slug', (req, res) => {
+    res.set('Cache-Control', 'no-store');
     const event = getEvent(req.params.slug);
     if (!event) {
       return res.status(404).json({
@@ -235,14 +242,17 @@ function createApp({
   }));
 
   app.get('/', (req, res) => {
+    res.set('Cache-Control', 'no-cache');
     res.send(homePage(getEventCollections()));
   });
 
   app.get('/events', (req, res) => {
+    res.set('Cache-Control', 'no-store');
     res.send(eventsPage(getEventCollections()));
   });
 
   app.get('/events/:slug', (req, res, next) => {
+    res.set('Cache-Control', 'no-store');
     const event = getEvent(req.params.slug);
     if (!event) return next();
     return res.send(eventDetailPage(event));
