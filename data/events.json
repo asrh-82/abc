@@ -1,0 +1,50 @@
+[
+  {
+    "id": "evt_basketball_2025",
+    "slug": "autism-basketball-community-project",
+    "name": "Autism Basketball Community Project",
+    "summary": "A community basketball event supporting access to autism therapy.",
+    "startsAt": "2025-01-12T08:30:00-07:00",
+    "timezone": "America/Phoenix",
+    "locationName": "Deem Hills Recreation Area",
+    "costLabel": "$15 per team",
+    "partner": "Phoenix Jewel of the East Lions Club",
+    "fundsRaisedCents": 80500,
+    "status": "completed",
+    "capacity": null,
+    "registrationOpensAt": null,
+    "registrationClosesAt": null
+  },
+  {
+    "id": "evt_hike_2025",
+    "slug": "autism-awareness-hike",
+    "name": "Autism Awareness Hike",
+    "summary": "A community hike bringing families, students, and supporters together.",
+    "startsAt": "2025-11-15T07:30:00-07:00",
+    "timezone": "America/Phoenix",
+    "locationName": "Thunderbird Conservation Park",
+    "costLabel": "$5 per person",
+    "partner": "Phoenix Jewel of the East Lions Club",
+    "fundsRaisedCents": null,
+    "status": "completed",
+    "capacity": null,
+    "registrationOpensAt": null,
+    "registrationClosesAt": null
+  },
+  {
+    "id": "evt_tennis_2026",
+    "slug": "community-tennis-tournament",
+    "name": "Community Tennis Tournament",
+    "summary": "A community tennis tournament supporting autism therapy in Arizona.",
+    "startsAt": "2026-08-30T07:30:00-07:00",
+    "timezone": "America/Phoenix",
+    "locationName": "Rose Mofford Sports Complex",
+    "costLabel": "$10 per player",
+    "partner": "SEWA Phoenix and ACE Tennis Academy",
+    "fundsRaisedCents": null,
+    "status": "completed",
+    "capacity": 64,
+    "registrationOpensAt": null,
+    "registrationClosesAt": null
+  }
+]

@@ -1,7 +1,23 @@
 {
   "name": "abc-website",
-  "version": "0.1.0",
-  "main": "server.js",
-  "scripts": { "start": "node server.js" },
-  "dependencies": { "express": "^4.19.2" }
+  "version": "0.3.0",
+  "private": true,
+  "description": "Autism: Bringing Change event and impact platform",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "build": "node scripts/build-static.js",
+    "test": "node --test",
+    "db:migrate": "node scripts/migrate.js",
+    "db:seed": "node scripts/seed.js",
+    "db:prune": "node scripts/prune-registrations.js",
+    "check": "node --check src/server.js && node --check src/app.js && node --check src/turnstile.js"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
 }
