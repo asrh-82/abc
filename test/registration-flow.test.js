@@ -10,8 +10,9 @@ const {
   migrateDatabase,
   openDatabase,
   pruneExpiredRegistrations,
-  seedEventsIfEmpty,
+  syncEventsFromManifest,
 } = require('../src/db');
+const { loadEventManifest } = require('../src/event-manifest');
 const { SITEVERIFY_URL, createTurnstileVerifier } = require('../src/turnstile');
 
 const projectRoot = path.resolve(__dirname, '..');
@@ -20,7 +21,10 @@ const fixedNow = new Date('2026-09-03T12:00:00-07:00');
 async function startTestApp(t, configureDatabase = () => {}, appOptions = {}) {
   const db = openDatabase(':memory:');
   migrateDatabase(db, path.join(projectRoot, 'db', 'migrations'));
-  seedEventsIfEmpty(db, path.join(projectRoot, 'data', 'events.json'));
+  syncEventsFromManifest(
+    db,
+    loadEventManifest(path.join(projectRoot, 'data', 'events.json'), { now: fixedNow })
+  );
   configureDatabase(db);
 
   const app = createApp({
