@@ -3,17 +3,24 @@ process.umask(0o077);
 const config = require('./config');
 const { createApp } = require('./app');
 const {
+  assertEventEndTimesReady,
+  assertAbcDatabase,
+  configureDatabaseFile,
   createRepositories,
   migrateDatabase,
   openDatabase,
   pruneExpiredRegistrations,
-  seedEventsIfEmpty,
+  syncEventsFromManifest,
 } = require('./db');
+const { loadEventManifest } = require('./event-manifest');
 const { createTurnstileVerifier } = require('./turnstile');
 
-const db = openDatabase(config.databasePath);
+const db = openDatabase(config.databasePath, { configureFile: false });
 migrateDatabase(db, config.migrationsPath);
-seedEventsIfEmpty(db, config.eventSeedPath);
+assertAbcDatabase(db);
+configureDatabaseFile(db, config.databasePath);
+syncEventsFromManifest(db, loadEventManifest(config.eventManifestPath));
+assertEventEndTimesReady(db);
 pruneExpiredRegistrations(db, new Date(), config.registrationRetentionDays);
 
 const app = createApp({

@@ -1,5 +1,5 @@
 const crypto = require('node:crypto');
-const { escapeHtml, formatEventDate, formatMoney } = require('../http');
+const { escapeHtml, formatEventDate, formatEventSchedule, formatMoney } = require('../http');
 const { page } = require('./layout');
 
 function eventDateBlock(event) {
@@ -12,10 +12,10 @@ function eventDateBlock(event) {
 }
 
 function eventMeta(event, { compact = false } = {}) {
-  const date = formatEventDate(event);
+  const schedule = formatEventSchedule(event);
   return `<dl class="event-meta${compact ? ' event-meta-compact' : ''}">
-    <div><dt>Date</dt><dd>${escapeHtml(date.fullDate)}</dd></div>
-    <div><dt>Time</dt><dd>${escapeHtml(date.time)}</dd></div>
+    <div><dt>Date</dt><dd>${escapeHtml(schedule.date)}</dd></div>
+    <div><dt>Time</dt><dd>${escapeHtml(schedule.time)}</dd></div>
     <div><dt>Location</dt><dd>${escapeHtml(event.locationName)}</dd></div>
     <div><dt>Cost</dt><dd>${escapeHtml(event.costLabel)}</dd></div>
   </dl>`;
@@ -52,7 +52,7 @@ function eventRow(event, { past = false } = {}) {
 }
 
 function homePage({ upcoming, past }) {
-  const nextEvent = upcoming.find((event) => event.status !== 'cancelled') || null;
+  const nextEvent = upcoming[0] || null;
   const latestPast = past.find((event) => event.status === 'completed') || null;
   const completedEvents = past.filter((event) => event.status === 'completed');
   const recordedRaised = completedEvents.reduce(
@@ -153,7 +153,7 @@ function homePage({ upcoming, past }) {
   });
 }
 
-function eventsPage({ upcoming, past }) {
+function eventsPage({ upcoming, past, cancelled = [] }) {
   const hasUpcoming = upcoming.length > 0;
   const upcomingMarkup = upcoming.length
     ? upcoming.map((event) => eventRow(event)).join('')
@@ -172,6 +172,10 @@ function eventsPage({ upcoming, past }) {
       <div class="section-heading"><h2>Upcoming</h2><span>${upcoming.length} ${upcoming.length === 1 ? 'event' : 'events'}</span></div>
       <div class="event-list">${upcomingMarkup}</div>
     </div></section>
+    ${cancelled.length ? `<section class="events-section" id="cancelled-events"><div class="shell">
+      <div class="section-heading"><h2>Cancelled events</h2><span>${cancelled.length} ${cancelled.length === 1 ? 'event' : 'events'}</span></div>
+      <div class="event-list">${cancelled.map((event) => eventRow(event)).join('')}</div>
+    </div></section>` : ''}
     <section class="events-section events-past" id="past-events"><div class="shell">
       <div class="section-heading"><h2>Past events</h2><span>${past.length} documented</span></div>
       <div class="event-list">${past.map((event) => eventRow(event, { past: true })).join('')}</div>
@@ -240,7 +244,7 @@ function registrationPage(
   event,
   { csrfToken, values = {}, errors = {}, turnstileSiteKey = '' } = {}
 ) {
-  const date = formatEventDate(event);
+  const schedule = formatEventSchedule(event);
   const idempotencyKey = values.idempotencyKey || crypto.randomUUID();
   const maxPartySize = event.remaining === null ? 10 : Math.max(1, Math.min(10, event.remaining));
   const errorSummary = Object.keys(errors).length
@@ -253,7 +257,7 @@ function registrationPage(
         <p class="eyebrow eyebrow-dark">Reserve your spot</p>
         <h1>${escapeHtml(event.name)}</h1>
         <div class="registration-event-summary">
-          <p><strong>${escapeHtml(date.fullDate)}</strong><br>${escapeHtml(date.time)}</p>
+          <p><strong>${escapeHtml(schedule.date)}</strong><br>${escapeHtml(schedule.time)}</p>
           <p>${escapeHtml(event.locationName)}<br>${escapeHtml(event.costLabel)}</p>
         </div>
         <ol class="step-list" aria-label="Registration progress">
@@ -309,7 +313,11 @@ function registrationPage(
 }
 
 function confirmationPage(registration, { duplicate = false } = {}) {
-  const date = formatEventDate({ startsAt: registration.starts_at, timezone: registration.timezone });
+  const schedule = formatEventSchedule({
+    startsAt: registration.starts_at,
+    endsAt: registration.ends_at,
+    timezone: registration.timezone,
+  });
   const cancelled =
     registration.status === 'cancelled' || registration.event_status === 'cancelled';
   const body = `<section class="confirmation-section"><div class="shell confirmation-card">
@@ -318,7 +326,7 @@ function confirmationPage(registration, { duplicate = false } = {}) {
       <h1>${escapeHtml(registration.event_name)}</h1>
       <p class="confirmation-lede">${cancelled ? 'These spots are no longer reserved. Contact ABC if this does not look right.' : duplicate ? 'We found your existing reservation and kept it unchanged.' : 'Your spots are reserved. Save the confirmation code below.'}</p>
       <dl class="confirmation-details">
-        <div><dt>When</dt><dd>${escapeHtml(date.fullDate)} at ${escapeHtml(date.time)}</dd></div>
+        <div><dt>When</dt><dd>${escapeHtml(schedule.date)} · ${escapeHtml(schedule.time)}</dd></div>
         <div><dt>Where</dt><dd>${escapeHtml(registration.location_name)}</dd></div>
         <div><dt>Spots</dt><dd>${registration.party_size}</dd></div>
         <div><dt>Confirmation</dt><dd><code>${escapeHtml(registration.confirmation_code)}</code></dd></div>

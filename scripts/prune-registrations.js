@@ -1,17 +1,23 @@
 process.umask(0o077);
 
 const config = require('../src/config');
-const { migrateDatabase, openDatabase, pruneExpiredRegistrations } = require('../src/db');
+const { pruneExpiredRegistrations } = require('../src/db');
+const { parseArgs, printError } = require('./lib/args');
+const { openOrganizerDatabase, printDatabasePath } = require('./lib/database');
 
-const db = openDatabase(config.databasePath);
+let db;
 try {
-  migrateDatabase(db, config.migrationsPath);
+  parseArgs(process.argv.slice(2));
+  printDatabasePath();
+  ({ db } = openOrganizerDatabase());
   const deleted = pruneExpiredRegistrations(
     db,
     new Date(),
     config.registrationRetentionDays
   );
   console.log(`Deleted ${deleted} expired registration record${deleted === 1 ? '' : 's'}.`);
+} catch (error) {
+  printError(error);
 } finally {
-  db.close();
+  if (db) db.close();
 }

@@ -131,13 +131,18 @@
     "schemas": {
       "Event": {
         "type": "object",
-        "required": ["id", "slug", "name", "summary", "startsAt", "timezone", "locationName", "costLabel", "status", "registrationOpen"],
+        "required": ["id", "slug", "name", "summary", "startsAt", "endsAt", "timezone", "locationName", "costLabel", "status", "registrationOpen"],
         "properties": {
           "id": { "type": "string" },
           "slug": { "type": "string" },
           "name": { "type": "string" },
           "summary": { "type": "string" },
           "startsAt": { "type": "string", "format": "date-time" },
+          "endsAt": {
+            "type": ["string", "null"],
+            "format": "date-time",
+            "description": "The event end time. Historical completed events may return null when an end time was not recorded."
+          },
           "timezone": { "type": "string", "example": "America/Phoenix" },
           "locationName": { "type": "string" },
           "costLabel": { "type": "string" },

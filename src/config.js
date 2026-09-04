@@ -7,7 +7,7 @@ module.exports = {
   port: Number.parseInt(process.env.PORT || '3000', 10),
   databasePath: process.env.DATABASE_PATH || path.join(projectRoot, 'var', 'abc.sqlite'),
   migrationsPath: path.join(projectRoot, 'db', 'migrations'),
-  eventSeedPath: path.join(projectRoot, 'data', 'events.json'),
+  eventManifestPath: path.join(projectRoot, 'data', 'events.json'),
   isProduction: process.env.NODE_ENV === 'production',
   registrationRetentionDays: Number.parseInt(process.env.REGISTRATION_RETENTION_DAYS || '30', 10),
   trustProxy: parseTrustProxy(process.env.TRUST_PROXY),
