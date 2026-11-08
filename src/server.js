@@ -38,9 +38,13 @@ const app = createApp({
   }),
 });
 
-const server = app.listen(config.port, () => {
-  console.log(`ABC website listening on port ${config.port}`);
-});
+const onListening = () => {
+  const hostLabel = config.host ? `${config.host}:` : '';
+  console.log(`ABC website listening on ${hostLabel}${config.port}`);
+};
+const server = config.host
+  ? app.listen(config.port, config.host, onListening)
+  : app.listen(config.port, onListening);
 
 const retentionTimer = setInterval(() => {
   pruneExpiredRegistrations(db, new Date(), config.registrationRetentionDays);
