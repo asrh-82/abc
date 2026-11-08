@@ -3,7 +3,10 @@ const crypto = require('node:crypto');
 const CONSENT_VERSION = '2026-09-03';
 
 function toPublicEvent(row, now = new Date()) {
-  const hasEnded = Date.parse(row.starts_at) <= now.getTime();
+  const startsAt = Date.parse(row.starts_at);
+  const endsAt = Date.parse(row.ends_at || row.starts_at);
+  const hasStarted = startsAt <= now.getTime();
+  const hasEnded = endsAt <= now.getTime();
   const beforeRegistrationWindow =
     row.registration_opens_at && Date.parse(row.registration_opens_at) > now.getTime();
   const afterRegistrationWindow =
@@ -17,7 +20,7 @@ function toPublicEvent(row, now = new Date()) {
   if (effectiveStatus === 'cancelled') registrationState = 'cancelled';
   else if (effectiveStatus === 'completed' || hasEnded) registrationState = 'completed';
   else if (remaining === 0) registrationState = 'full';
-  else if (effectiveStatus !== 'open' || afterRegistrationWindow) registrationState = 'closed';
+  else if (hasStarted || effectiveStatus !== 'open' || afterRegistrationWindow) registrationState = 'closed';
   else if (beforeRegistrationWindow) registrationState = 'not_yet_open';
   else registrationState = 'open';
   const registrationOpen = registrationState === 'open';
@@ -28,6 +31,7 @@ function toPublicEvent(row, now = new Date()) {
     name: row.name,
     summary: row.summary,
     startsAt: row.starts_at,
+    endsAt: row.ends_at || null,
     timezone: row.timezone,
     locationName: row.location_name,
     costLabel: row.cost_label,
@@ -47,11 +51,20 @@ function splitEvents(rows, now = new Date()) {
   const events = rows.map((row) => toPublicEvent(row, now));
   return {
     upcoming: events
-      .filter((event) => event.status !== 'completed' && Date.parse(event.startsAt) > now.getTime())
+      .filter((event) => {
+        const effectiveEnd = Date.parse(event.endsAt || event.startsAt);
+        return event.status !== 'completed' && event.status !== 'cancelled' && effectiveEnd > now.getTime();
+      })
       .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt)),
     past: events
-      .filter((event) => event.status === 'completed' || Date.parse(event.startsAt) <= now.getTime())
+      .filter((event) => {
+        const effectiveEnd = Date.parse(event.endsAt || event.startsAt);
+        return event.status !== 'cancelled' && (event.status === 'completed' || effectiveEnd <= now.getTime());
+      })
       .sort((a, b) => Date.parse(b.startsAt) - Date.parse(a.startsAt)),
+    cancelled: events
+      .filter((event) => event.status === 'cancelled')
+      .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt)),
   };
 }
 

@@ -112,10 +112,11 @@ function createApp({
     registrationProtectionReady
   );
   const getEventCollections = () => {
-    const { upcoming, past } = splitEvents(repositories.events.list(), now());
+    const { upcoming, past, cancelled } = splitEvents(repositories.events.list(), now());
     return {
       upcoming: upcoming.map(protectEvent),
       past: past.map(protectEvent),
+      cancelled: cancelled.map(protectEvent),
     };
   };
   const getEvent = (slug) => {
@@ -157,7 +158,7 @@ function createApp({
 
   app.get('/api/v1/events', (req, res) => {
     res.set('Cache-Control', 'no-store');
-    const { upcoming, past } = getEventCollections();
+    const { upcoming, past, cancelled } = getEventCollections();
     const scope = String(req.query.scope || 'upcoming');
     if (!['upcoming', 'past', 'all'].includes(scope)) {
       return res.status(400).json({
@@ -167,7 +168,11 @@ function createApp({
         },
       });
     }
-    const events = scope === 'past' ? past : scope === 'all' ? [...upcoming, ...past] : upcoming;
+    const events = scope === 'past'
+      ? past
+      : scope === 'all'
+        ? [...upcoming, ...cancelled, ...past]
+        : upcoming;
     return res.json({ data: events, meta: { count: events.length } });
   });
 
