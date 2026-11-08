@@ -13,11 +13,17 @@ function asUuid(value) {
 function createTurnstileVerifier({
   secretKey = '',
   expectedHostname = '',
+  expectedHostnames = [],
   fetchImpl = globalThis.fetch,
   timeoutMs = 5_000,
 } = {}) {
+  const allowedHostnames = new Set(
+    [...expectedHostnames, expectedHostname]
+      .map((hostname) => String(hostname || '').trim().toLowerCase())
+      .filter(Boolean)
+  );
   return async function verifyHuman({ token = '', remoteIp = '', idempotencyKey = '' } = {}) {
-    if (!secretKey) {
+    if (!secretKey || allowedHostnames.size === 0) {
       return { ok: false, unavailable: true };
     }
 
@@ -48,7 +54,8 @@ function createTurnstileVerifier({
 
       const result = await response.json();
       if (!result.success || result.action !== EXPECTED_ACTION) return { ok: false };
-      if (expectedHostname && result.hostname !== expectedHostname) return { ok: false };
+      const responseHostname = String(result.hostname || '').trim().toLowerCase();
+      if (allowedHostnames.size && !allowedHostnames.has(responseHostname)) return { ok: false };
       return { ok: true };
     } catch {
       return { ok: false, unavailable: true };

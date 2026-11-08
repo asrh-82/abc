@@ -3,6 +3,7 @@ const path = require('node:path');
 
 const { loadEventManifest, validateEventManifest } = require('../src/event-manifest');
 const { splitEvents } = require('../src/services');
+const { loadSiteConfig } = require('../src/site-config');
 const {
   eventDetailPage,
   eventsPage,
@@ -10,6 +11,7 @@ const {
   impactPage,
   notFoundPage,
   privacyPage,
+  supportPage,
 } = require('../src/views/pages');
 
 const projectRoot = path.resolve(__dirname, '..');
@@ -58,6 +60,7 @@ function buildStatic({
   now = new Date(),
   events = loadEventManifest(path.join(projectRoot, 'data', 'events.json'), { now }),
   outputDirectory = defaultOutputDirectory,
+  siteConfig = loadSiteConfig(process.env),
 } = {}) {
   fs.rmSync(outputDirectory, { recursive: true, force: true });
   fs.mkdirSync(outputDirectory, { recursive: true });
@@ -71,28 +74,64 @@ function buildStatic({
     cancelled: splitCollections.cancelled.map(closeRegistrationForStaticPreview),
   };
 
-  writePage(outputDirectory, 'index.html', homePage(collections));
-  writePage(outputDirectory, 'events/index.html', eventsPage(collections));
+  writePage(outputDirectory, 'index.html', homePage(collections, { siteConfig }));
+  writePage(outputDirectory, 'events/index.html', eventsPage(collections, { siteConfig }));
   writePage(
     outputDirectory,
     'impact/index.html',
-    impactPage(collections.past.filter((event) => event.status === 'completed'))
+    impactPage(collections.past.filter((event) => event.status === 'completed'), { siteConfig })
   );
-  writePage(outputDirectory, 'privacy/index.html', privacyPage());
-  writePage(outputDirectory, '404.html', notFoundPage());
+  writePage(outputDirectory, 'support/index.html', supportPage({ siteConfig }));
+  writePage(outputDirectory, 'privacy/index.html', privacyPage(30, { siteConfig }));
+  writePage(outputDirectory, '404.html', notFoundPage({ siteConfig }));
 
   for (const event of [
     ...collections.upcoming,
     ...collections.cancelled,
     ...collections.past,
   ]) {
-    writePage(outputDirectory, `events/${event.slug}/index.html`, eventDetailPage(event));
+    writePage(
+      outputDirectory,
+      `events/${event.slug}/index.html`,
+      eventDetailPage(event, { siteConfig })
+    );
   }
 
   fs.copyFileSync(path.join(projectRoot, 'public', 'styles.css'), path.join(outputDirectory, 'styles.css'));
   fs.copyFileSync(path.join(projectRoot, 'public', 'favicon.svg'), path.join(outputDirectory, 'favicon.svg'));
+  const imageSource = path.join(projectRoot, 'public', 'images');
+  if (fs.existsSync(imageSource)) {
+    fs.cpSync(imageSource, path.join(outputDirectory, 'images'), { recursive: true });
+  }
 
-  return 5 + collections.upcoming.length + collections.cancelled.length + collections.past.length;
+  const publicPaths = [
+    '/',
+    '/events',
+    '/impact',
+    '/support',
+    '/privacy',
+    ...[
+      ...collections.upcoming,
+      ...collections.cancelled,
+      ...collections.past,
+    ].map((event) => `/events/${encodeURIComponent(event.slug)}`),
+  ];
+  if (siteConfig.publicSiteOrigin) {
+    writePage(
+      outputDirectory,
+      'sitemap.xml',
+      `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${publicPaths.map((publicPath) => `  <url><loc>${siteConfig.publicSiteOrigin}${publicPath === '/' ? '' : publicPath}</loc></url>`).join('\n')}\n</urlset>\n`
+    );
+    writePage(
+      outputDirectory,
+      'robots.txt',
+      `User-agent: *\nAllow: /\nSitemap: ${siteConfig.publicSiteOrigin}/sitemap.xml\n`
+    );
+  } else {
+    writePage(outputDirectory, 'robots.txt', 'User-agent: *\nDisallow: /\n');
+  }
+
+  return 6 + collections.upcoming.length + collections.cancelled.length + collections.past.length;
 }
 
 if (require.main === module) {

@@ -1,6 +1,12 @@
 const path = require('node:path');
+const { loadSiteConfig } = require('./site-config');
 
 const projectRoot = path.resolve(__dirname, '..');
+const turnstileExpectedHostnames = parseList(
+  [process.env.TURNSTILE_EXPECTED_HOSTNAMES, process.env.TURNSTILE_EXPECTED_HOSTNAME]
+    .filter(Boolean)
+    .join(',')
+);
 
 module.exports = {
   projectRoot,
@@ -13,16 +19,24 @@ module.exports = {
   trustProxy: parseTrustProxy(process.env.TRUST_PROXY),
   turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || '',
   turnstileSecretKey: process.env.TURNSTILE_SECRET_KEY || '',
-  turnstileExpectedHostname: process.env.TURNSTILE_EXPECTED_HOSTNAME || '',
+  turnstileExpectedHostnames,
   registrationProtectionReady: Boolean(
     process.env.TURNSTILE_SITE_KEY &&
     process.env.TURNSTILE_SECRET_KEY &&
-    process.env.TURNSTILE_EXPECTED_HOSTNAME
+    turnstileExpectedHostnames.length
   ),
+  site: loadSiteConfig(process.env),
 };
 
 function parseTrustProxy(value) {
   if (!value) return false;
   if (/^\d+$/.test(value)) return Number.parseInt(value, 10);
   return value.split(',').map((entry) => entry.trim()).filter(Boolean);
+}
+
+function parseList(value) {
+  return String(value || '')
+    .split(',')
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean);
 }

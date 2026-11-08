@@ -153,3 +153,53 @@ test('Vercel previews keep the static site security headers', () => {
   assert.equal(headers.get('X-Content-Type-Options'), 'nosniff');
   assert.equal(headers.get('X-Frame-Options'), 'DENY');
 });
+
+test('foundation build publishes support, verified event content, assets, and no-index preview rules', (t) => {
+  const outputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'abc-static-foundation-'));
+  t.after(() => fs.rmSync(outputDirectory, { recursive: true, force: true }));
+
+  buildStatic({
+    now: new Date('2026-11-08T12:00:00Z'),
+    outputDirectory,
+  });
+
+  const home = fs.readFileSync(path.join(outputDirectory, 'index.html'), 'utf8');
+  const events = fs.readFileSync(path.join(outputDirectory, 'events', 'index.html'), 'utf8');
+  const support = fs.readFileSync(path.join(outputDirectory, 'support', 'index.html'), 'utf8');
+  const robots = fs.readFileSync(path.join(outputDirectory, 'robots.txt'), 'utf8');
+
+  assert.match(home, /Bake\. Create\. Connect\. Give back\./);
+  assert.match(home, /bake-sale-2026\.jpg/);
+  assert.match(events, /Bake Sale for a Better Future/);
+  assert.match(support, /Online donations are being connected\./);
+  assert.doesNotMatch(support, /zeffy-embed\.js/);
+  assert.match(home, /<meta name="robots" content="noindex,nofollow">/);
+  assert.equal(robots, 'User-agent: *\nDisallow: /\n');
+  assert.equal(fs.existsSync(path.join(outputDirectory, 'images', 'bake-sale-2026.jpg')), true);
+  assert.equal(fs.existsSync(path.join(outputDirectory, 'images', 'abc-brand-banner.jpg')), true);
+});
+
+test('configured Zeffy campaign renders one secure hosted handoff without third-party scripts', (t) => {
+  const outputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'abc-static-zeffy-'));
+  t.after(() => fs.rmSync(outputDirectory, { recursive: true, force: true }));
+
+  const campaignUrl = 'https://www.zeffy.com/en-US/donation-form/abc?utm_source=website';
+  buildStatic({
+    now: new Date('2026-11-08T12:00:00Z'),
+    outputDirectory,
+    siteConfig: {
+      instagramUrl: 'https://www.instagram.com/theabc_project/',
+      linkedinUrl: 'https://www.linkedin.com/company/autism-bringing-change',
+      publicSiteOrigin: '',
+      zeffyDonationUrl: campaignUrl,
+    },
+  });
+
+  const support = fs.readFileSync(path.join(outputDirectory, 'support', 'index.html'), 'utf8');
+  const allHtml = readHtmlFiles(outputDirectory);
+  assert.equal((support.match(new RegExp(campaignUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length, 1);
+  assert.match(support, /Continue securely to Zeffy/);
+  assert.doesNotMatch(support, /zeffy-embed\.js|<iframe\b|data-zeffy-embed/i);
+  assert.doesNotMatch(allHtml, /<form\b/i);
+  assert.doesNotMatch(allHtml, /(?:href|action)="[^"]*\/register(?:[/?#"])/i);
+});

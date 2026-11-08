@@ -29,11 +29,12 @@ const app = createApp({
   isProduction: config.isProduction,
   trustProxy: config.trustProxy,
   registrationRetentionDays: config.registrationRetentionDays,
+  siteConfig: config.site,
   turnstileSiteKey: config.turnstileSiteKey,
   registrationProtectionReady: config.registrationProtectionReady,
   verifyHuman: createTurnstileVerifier({
     secretKey: config.turnstileSecretKey,
-    expectedHostname: config.turnstileExpectedHostname,
+    expectedHostnames: config.turnstileExpectedHostnames,
   }),
 });
 

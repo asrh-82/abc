@@ -1,6 +1,6 @@
 # Autism: Bringing Change
 
-ABC's public event and impact website. Phase 4A keeps event publishing deliberate: event data is validated before it is synchronized, organizer operations are available through local commands, and every Vercel deployment is a static preview with registration forced closed.
+ABC's public event, impact, and support website. Event data is validated before it is synchronized, organizer operations are available through local commands, and every current Vercel deployment is a static preview with registration forced closed.
 
 The Express registration service and `/api/v1` contract remain in the repository for local development and the future production application. They are not deployed by the current Vercel configuration.
 
@@ -13,6 +13,10 @@ The Express registration service and `/api/v1` contract remain in the repository
 - is suitable for reviewing content, layout, links, and event details only.
 
 Do not use a Vercel preview to collect registrations. Public registration on Vercel remains blocked until the application uses managed PostgreSQL and real organizer authentication with MFA.
+
+## Zeffy and Cloudflare
+
+The Support page is ready for a Zeffy campaign, and the dynamic registration service is ready for a Cloudflare Turnstile widget. Account-side setup, safe environment variables, DNS cutover, test keys, and launch verification are documented in [the Zeffy and Cloudflare setup guide](docs/zeffy-cloudflare-setup.md).
 
 ## Local setup
 

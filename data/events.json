@@ -49,5 +49,22 @@
     "capacity": 64,
     "registrationOpensAt": null,
     "registrationClosesAt": null
+  },
+  {
+    "id": "evt_bake_sale_2026",
+    "slug": "bake-sale-for-a-better-future",
+    "name": "Bake Sale for a Better Future",
+    "summary": "A community bake sale with treats, entertainment, interactive stalls, and volunteer opportunities.",
+    "startsAt": "2026-10-24T16:00:00-07:00",
+    "endsAt": "2026-10-24T20:00:00-07:00",
+    "timezone": "America/Phoenix",
+    "locationName": "Aloravita Community, near Palo Verde Park Basketball Court",
+    "costLabel": "Community bake sale",
+    "partner": "Chea Youth",
+    "fundsRaisedCents": null,
+    "status": "completed",
+    "capacity": null,
+    "registrationOpensAt": null,
+    "registrationClosesAt": null
   }
 ]

@@ -64,7 +64,7 @@ Public registration on Vercel is blocked until canonical data is on managed Post
 - Migrate and verify capacity transactions, cancellation behavior, event synchronization, audit integrity, retention, backups, and restoration against PostgreSQL.
 - Add organization-owned organizer accounts, authorization checks, MFA, session protection, access review, and account-recovery procedures.
 - Expose summary, export, status, and cancellation operations only through authenticated and authorized organizer access.
-- Configure `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`, and `TURNSTILE_EXPECTED_HOSTNAME`; registration must fail closed when any value is missing.
+- Configure `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY`, and the comma-separated `TURNSTILE_EXPECTED_HOSTNAMES`; registration must fail closed when any value is missing.
 - Keep CSRF protection, server-side Turnstile validation, bounded inputs, exact-retry protection, capacity transactions, rate limiting, and no-store responses.
 - Enable upstream WAF and request monitoring before publishing a capped event.
 - Review the privacy notice with the organization responsible for the site, including Turnstile processing, organizer access, export handling, and retention periods.
@@ -84,6 +84,7 @@ Public registration on Vercel is blocked until canonical data is on managed Post
 - Configure encrypted PostgreSQL backups whose retention matches the approved data-retention window, and complete a restore drill.
 - Schedule and verify registration-data pruning against event `endsAt`, with `startsAt` used only for eligible historical records that lack an end time.
 - Verify the apex and `www` DNS records, TLS certificate, and canonical-host redirect before changing public traffic.
+- Keep Vercel's Cloudflare DNS records set to DNS only / gray cloud unless a later reviewed architecture intentionally adds Cloudflare's reverse proxy.
 - Smoke-test `/health`, event listing and detail responses, one successful staging registration, one exact retry, one full-event response, one cancellation, one secure export, and one retention run.
 - Verify the end-to-end staging flow uses PostgreSQL and authenticated organizer access; a successful static Vercel preview is not sufficient.
 - Keep the previous release available for application rollback, but never restore stale registration data over newer canonical data.

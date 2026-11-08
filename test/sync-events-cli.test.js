@@ -53,7 +53,7 @@ test('event sync dry-run is read-only and identifies exact proposed events', (t)
   const db = openDatabase(databasePath);
   migrateDatabase(db, migrationsPath);
   const events = loadEventManifest(path.join(projectRoot, 'data', 'events.json'), {
-    now: new Date('2026-09-04T12:00:00Z'),
+    now: new Date('2026-11-08T12:00:00Z'),
   });
   syncEventsFromManifest(db, events.slice(0, 2));
   db.close();
@@ -63,10 +63,14 @@ test('event sync dry-run is read-only and identifies exact proposed events', (t)
   const after = fs.readFileSync(databasePath);
 
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /Dry run: 1 inserted, 0 updated, 2 unchanged/);
+  assert.match(result.stdout, /Dry run: 2 inserted, 0 updated, 2 unchanged/);
   assert.match(
     result.stdout,
     /insert evt_tennis_2026 \(community-tennis-tournament\): new event/
+  );
+  assert.match(
+    result.stdout,
+    /insert evt_bake_sale_2026 \(bake-sale-for-a-better-future\): new event/
   );
   assert.deepEqual(after, before);
 });
