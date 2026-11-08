@@ -1,0 +1,224 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Autism: Bringing Change Public API",
+    "version": "1.0.0",
+    "description": "Public event discovery and registration endpoints shared by the ABC website and future clients."
+  },
+  "paths": {
+    "/api/v1/events": {
+      "get": {
+        "summary": "List public events",
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["upcoming", "past", "all"],
+              "default": "upcoming"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A public event collection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["data", "meta"],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Event" }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "required": ["count"],
+                      "properties": {
+                        "count": { "type": "integer", "minimum": 0 }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/events/{slug}": {
+      "get": {
+        "summary": "Get one public event",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A public event",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["data"],
+                  "properties": {
+                    "data": { "$ref": "#/components/schemas/Event" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/api/v1/events/{slug}/registrations": {
+      "post": {
+        "summary": "Reserve spots for an event",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RegistrationInput" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registration created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RegistrationResponse" }
+              }
+            }
+          },
+          "200": {
+            "description": "An exact idempotent replay of a completed registration request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RegistrationResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Error" },
+          "404": { "$ref": "#/components/responses/Error" },
+          "409": { "$ref": "#/components/responses/Error" },
+          "422": { "$ref": "#/components/responses/Error" },
+          "413": { "$ref": "#/components/responses/Error" },
+          "415": { "$ref": "#/components/responses/Error" },
+          "429": { "$ref": "#/components/responses/Error" },
+          "503": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Event": {
+        "type": "object",
+        "required": ["id", "slug", "name", "summary", "startsAt", "timezone", "locationName", "costLabel", "status", "registrationOpen"],
+        "properties": {
+          "id": { "type": "string" },
+          "slug": { "type": "string" },
+          "name": { "type": "string" },
+          "summary": { "type": "string" },
+          "startsAt": { "type": "string", "format": "date-time" },
+          "timezone": { "type": "string", "example": "America/Phoenix" },
+          "locationName": { "type": "string" },
+          "costLabel": { "type": "string" },
+          "partner": { "type": ["string", "null"] },
+          "fundsRaisedCents": { "type": ["integer", "null"] },
+          "status": { "type": "string", "enum": ["open", "closed", "completed", "cancelled"] },
+          "capacity": { "type": ["integer", "null"] },
+          "remaining": { "type": ["integer", "null"] },
+          "registrationOpensAt": { "type": ["string", "null"], "format": "date-time" },
+          "registrationClosesAt": { "type": ["string", "null"], "format": "date-time" },
+          "registrationState": { "type": "string", "enum": ["open", "not_yet_open", "full", "closed", "completed", "cancelled"] },
+          "registrationOpen": { "type": "boolean" }
+        }
+      },
+      "RegistrationInput": {
+        "type": "object",
+        "required": ["contactName", "email", "partySize", "consent", "idempotencyKey", "turnstileToken"],
+        "properties": {
+          "contactName": { "type": "string", "minLength": 2, "maxLength": 80 },
+          "email": { "type": "string", "format": "email", "maxLength": 254 },
+          "partySize": { "type": "integer", "minimum": 1, "maximum": 10 },
+          "consent": { "type": "boolean" },
+          "idempotencyKey": {
+            "type": "string",
+            "format": "uuid",
+            "minLength": 36,
+            "maxLength": 36,
+            "pattern": "^[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-4[A-Fa-f0-9]{3}-[89ABab][A-Fa-f0-9]{3}-[A-Fa-f0-9]{12}$",
+            "description": "A randomly generated UUIDv4 reused only for an exact retry."
+          },
+          "website": { "type": "string", "description": "Spam-trap field; clients must leave it empty." },
+          "turnstileToken": {
+            "type": "string",
+            "maxLength": 2048,
+            "description": "A Cloudflare Turnstile token created for the event-registration action. Required on the protected production endpoint."
+          }
+        }
+      },
+      "RegistrationResponse": {
+        "type": "object",
+        "required": ["data"],
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": ["registrationId", "confirmationCode", "eventSlug", "eventName", "partySize", "duplicate"],
+            "properties": {
+              "registrationId": { "type": "string" },
+              "confirmationCode": { "type": "string" },
+              "eventSlug": { "type": "string" },
+              "eventName": { "type": "string" },
+              "partySize": { "type": "integer" },
+              "duplicate": { "type": "boolean" }
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message"],
+            "properties": {
+              "code": { "type": "string" },
+              "message": { "type": "string" },
+              "fields": { "type": "object", "additionalProperties": { "type": "string" } }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "Error": {
+        "description": "A structured API error",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      }
+    }
+  }
+}
