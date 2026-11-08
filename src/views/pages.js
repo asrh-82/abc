@@ -2,6 +2,8 @@ const crypto = require('node:crypto');
 const { escapeHtml, formatEventDate, formatEventSchedule, formatMoney } = require('../http');
 const { page } = require('./layout');
 
+const BAKE_SALE_POST_URL = 'https://www.instagram.com/theabc_project/p/DeFROTLv1Q6/';
+
 function eventDateBlock(event) {
   const date = formatEventDate(event);
   return `<time class="date-block" datetime="${escapeHtml(event.startsAt)}" aria-label="${escapeHtml(date.fullDate)}">
@@ -51,7 +53,7 @@ function eventRow(event, { past = false } = {}) {
   </article>`;
 }
 
-function homePage({ upcoming, past }) {
+function homePage({ upcoming, past }, { siteConfig = {} } = {}) {
   const nextEvent = upcoming[0] || null;
   const latestPast = past.find((event) => event.status === 'completed') || null;
   const completedEvents = past.filter((event) => event.status === 'completed');
@@ -59,101 +61,107 @@ function homePage({ upcoming, past }) {
     (total, event) => total + (event.fundsRaisedCents || 0),
     0
   );
-  const nextEventAction = nextEvent?.registrationOpen ? 'View event and register' : 'View event details';
-  const nextEventPanel = nextEvent
-    ? `<aside class="next-event" aria-label="Next event">
-        <p class="eyebrow">Next event</p>
-        <div class="next-event-heading">${eventDateBlock(nextEvent)}<h2>${escapeHtml(nextEvent.name)}</h2></div>
-        <p>${escapeHtml(nextEvent.locationName)}</p>
-        <a class="button button-sun" href="/events/${encodeURIComponent(nextEvent.slug)}">${nextEventAction}</a>
-      </aside>`
-    : `<aside class="next-event next-event-quiet" aria-label="Current event status">
-        <p class="eyebrow">Current status</p>
-        <p class="planning-status"><span aria-hidden="true"></span>No upcoming event announced</p>
-        <h2>Planning is underway.</h2>
-        <p>There is no signup open right now. The date, location, cost, and registration link will appear here once the next event is confirmed.</p>
-        <a class="button button-sun" href="/events#past-events">See past events</a>
-      </aside>`;
-
-  const primaryHeroAction = nextEvent
-    ? '<a class="button button-light" href="/events">Find an event</a>'
-    : '<a class="button button-light" href="/impact">See our impact</a>';
-
-  const purposeContent = nextEvent
-    ? `<div>
-        <p class="eyebrow eyebrow-dark">How registration works</p>
-        <h2>From event page to confirmed spot.</h2>
-      </div>
-      <ol class="process-list">
-        <li><span>01</span><div><strong>Choose an event</strong><p>See the date, location, cost, and available spots before you commit.</p></div></li>
-        <li><span>02</span><div><strong>Reserve your spot</strong><p>Enter one contact name, email address, and the number of spots you need.</p></div></li>
-        <li><span>03</span><div><strong>Get confirmation</strong><p>Your confirmation appears immediately. No account is required.</p></div></li>
-      </ol>`
-    : `<div>
-        <p class="eyebrow eyebrow-dark">How ABC creates impact</p>
-        <h2>Local events. Local partners. A clear purpose.</h2>
-      </div>
-      <ol class="process-list">
-        <li><span>01</span><div><strong>Bring the community together</strong><p>ABC has organized basketball, hiking, and tennis events across the Phoenix area.</p></div></li>
-        <li><span>02</span><div><strong>Work with local organizations</strong><p>Past collaborators include the Phoenix Jewel of the East Lions Club, SEWA Phoenix, and ACE Tennis Academy.</p></div></li>
-        <li><span>03</span><div><strong>Support access to therapy</strong><p>Event proceeds help fund autism therapy through AZA United.</p></div></li>
-      </ol>`;
+  const eventRibbon = nextEvent
+    ? `<div class="event-ribbon" aria-label="Next event">
+        <span>Next event</span>
+        <strong>${escapeHtml(nextEvent.name)}</strong>
+        <a href="/events/${encodeURIComponent(nextEvent.slug)}">${nextEvent.registrationOpen ? 'Details and registration' : 'Event details'} <span aria-hidden="true">→</span></a>
+      </div>`
+    : `<div class="event-ribbon event-ribbon-quiet" aria-label="Current event status">
+        <span>Event update</span>
+        <strong>No registration is open right now.</strong>
+        <a href="/events#past-events">Explore past events <span aria-hidden="true">→</span></a>
+      </div>`;
 
   const body = `
   <section class="hero">
     <div class="shell hero-grid">
       <div class="hero-copy">
-        <p class="eyebrow">Phoenix, Arizona · Youth-led</p>
-        <h1>Building blocks for a better future.</h1>
-        <p class="hero-lede">Autism: Bringing Change organizes community events that help fund autism therapy for Phoenix families.</p>
+        <p class="eyebrow">Student-led in Arizona</p>
+        <h1>Community experiences that make belonging real.</h1>
+        <p class="hero-lede">Autism: Bringing Change creates inclusive events, service projects, and local partnerships for autistic individuals and their families.</p>
         <div class="hero-actions">
-          ${primaryHeroAction}
-          <a class="text-link text-link-light" href="/events#past-events">Browse past events <span aria-hidden="true">→</span></a>
+          <a class="button button-blue" href="/support">Support the work</a>
+          <a class="text-link" href="/events">See what ABC has done <span aria-hidden="true">→</span></a>
         </div>
+        ${eventRibbon}
       </div>
-      ${nextEventPanel}
+      <div class="hero-art">
+        <span class="shape shape-sky" aria-hidden="true"></span>
+        <span class="shape shape-yellow" aria-hidden="true"></span>
+        <span class="shape shape-red" aria-hidden="true"></span>
+        <div class="hero-proof">
+          <strong>200+</strong>
+          <span>community participants</span>
+          <small>reported by ABC</small>
+        </div>
+        <img src="/images/abc-brand-banner.jpg" width="744" height="126" alt="Autism: Bringing Change. Building Blocks for a Better Future.">
+      </div>
     </div>
   </section>
-  <section class="purpose-section">
-    <div class="shell purpose-grid">
-      ${purposeContent}
+  <section class="story-section">
+    <div class="shell story-intro">
+      <div>
+        <p class="eyebrow eyebrow-dark">How change takes shape</p>
+        <h2>Built by people showing up together.</h2>
+      </div>
+      <p>From the court to the trail, each ABC project gives students, families, volunteers, and community partners a real way to take part.</p>
     </div>
+    <ol class="shell story-stream">
+      <li class="story-step story-step-blue"><span>01</span><div><h3>Gather</h3><p>ABC creates welcoming spaces through basketball, hiking, tennis, pickleball, and community events.</p></div></li>
+      <li class="story-step story-step-yellow"><span>02</span><div><h3>Partner</h3><p>Local organizations bring experience, volunteers, venues, and reach to every project.</p></div></li>
+      <li class="story-step story-step-red"><span>03</span><div><h3>Keep building</h3><p>Service projects, sensory-kit outreach, and student leadership carry the work beyond one event.</p></div></li>
+    </ol>
   </section>
   <section class="about-section" id="about"><div class="shell about-grid">
-    <div>
+    <div class="about-heading">
       <p class="eyebrow">About ABC</p>
-      <h2>A youth-led initiative built around participation.</h2>
+      <h2>Students turning inclusion into action.</h2>
     </div>
     <div class="about-copy">
-      <p>ABC gives students, families, and local organizations a practical way to support autism therapy: come together, run a strong event, and direct the proceeds toward care.</p>
-      <dl class="about-facts">
-        <div><dt>Based in</dt><dd>Phoenix, Arizona</dd></div>
-        <div><dt>Events documented</dt><dd>${completedEvents.length}</dd></div>
-        <div><dt>Publicly recorded</dt><dd>${escapeHtml(recordedRaised > 0 ? `${formatMoney(recordedRaised)}+ raised` : 'Impact reporting in progress')}</dd></div>
-      </dl>
+      <p>ABC is an Arizona nonprofit led by students. The team works with schools, nonprofits, businesses, and community groups to build awareness, create inclusive experiences, and make service easier to join.</p>
+      <a class="text-link text-link-light" href="/impact">See the full record <span aria-hidden="true">→</span></a>
+    </div>
+    <dl class="impact-drift" aria-label="ABC impact at a glance">
+      <div><dt>Community participants</dt><dd>200+</dd></div>
+      <div><dt>Publicly reported partnerships</dt><dd>5</dd></div>
+      <div><dt>Events documented here</dt><dd>${completedEvents.length}</dd></div>
+      <div><dt>Verified event fundraising</dt><dd>${escapeHtml(recordedRaised > 0 ? `${formatMoney(recordedRaised)}+` : 'Reporting in progress')}</dd></div>
+    </dl>
+  </div></section>
+  <section class="recent-section"><div class="shell recent-grid">
+    <figure class="bake-art">
+      <span class="bake-art-backdrop" aria-hidden="true"></span>
+      <img src="/images/bake-sale-2026.jpg" width="640" height="640" loading="lazy" decoding="async" alt="Colorful Bake Sale for a Better Future artwork from ABC and Chea Youth.">
+      <figcaption>October 24, 2026 · with Chea Youth</figcaption>
+    </figure>
+    <div class="recent-copy">
+      <p class="eyebrow eyebrow-dark">Recently at ABC</p>
+      <h2>Bake. Create. Connect. Give back.</h2>
+      <p>ABC and Chea Youth brought treats, entertainment, interactive stalls, and volunteer opportunities to Aloravita Community for the Bake Sale for a Better Future.</p>
+      <a class="text-link" href="${BAKE_SALE_POST_URL}" rel="noopener">See the original Instagram post <span aria-hidden="true">→</span></a>
     </div>
   </div></section>
-  ${latestPast ? `<section class="latest-section"><div class="shell section-grid">
-    <div>
-      <p class="eyebrow eyebrow-dark">Most recent event</p>
-      <h2>${escapeHtml(latestPast.name)}</h2>
-      <p>${escapeHtml(latestPast.summary)}</p>
-    </div>
-    <div class="latest-details">
-      ${eventMeta(latestPast, { compact: true })}
-      <a class="button button-dark" href="/events/${encodeURIComponent(latestPast.slug)}">View event details</a>
-    </div>
-  </div></section>` : ''}`;
+  ${latestPast ? `<section class="event-spotlight"><div class="shell spotlight-grid">
+    <div><p class="eyebrow eyebrow-dark">Latest documented event</p><h2>${escapeHtml(latestPast.name)}</h2><p>${escapeHtml(latestPast.summary)}</p></div>
+    <div>${eventMeta(latestPast, { compact: true })}<a class="button button-navy" href="/events/${encodeURIComponent(latestPast.slug)}">View event details</a></div>
+  </div></section>` : ''}
+  <section class="support-band"><div class="shell support-band-inner">
+    <div><p class="eyebrow">Keep the next project moving</p><h2>There is more to build.</h2></div>
+    <div><p>Support future community events, outreach, and student-led service through ABC’s secure giving page.</p><a class="button button-light" href="/support">Ways to support ABC</a></div>
+  </div></section>`;
 
   return page({
     title: 'Home',
-    description: 'Autism: Bringing Change is a youth-led Phoenix initiative supporting autism therapy through community events.',
+    description: 'Autism: Bringing Change is a student-led Arizona nonprofit creating inclusive events, service projects, and community partnerships.',
     activePath: '/',
+    canonicalPath: '/',
     body,
+    siteConfig,
   });
 }
 
-function eventsPage({ upcoming, past, cancelled = [] }) {
+function eventsPage({ upcoming, past, cancelled = [] }, { siteConfig = {} } = {}) {
   const hasUpcoming = upcoming.length > 0;
   const upcomingMarkup = upcoming.length
     ? upcoming.map((event) => eventRow(event)).join('')
@@ -185,11 +193,13 @@ function eventsPage({ upcoming, past, cancelled = [] }) {
     title: 'Events',
     description: 'Browse upcoming and completed Autism: Bringing Change community events in the Phoenix area.',
     activePath: '/events',
+    canonicalPath: '/events',
     body,
+    siteConfig,
   });
 }
 
-function eventDetailPage(event, { notice = '' } = {}) {
+function eventDetailPage(event, { notice = '', siteConfig = {} } = {}) {
   const closedMessages = {
     not_yet_open: ['Registration opens soon.', 'Check back when the registration window begins.'],
     full: ['This event is full.', 'Registration has reached the available capacity.'],
@@ -236,13 +246,15 @@ function eventDetailPage(event, { notice = '' } = {}) {
     title: event.name,
     description: event.summary,
     activePath: '/events',
+    canonicalPath: `/events/${encodeURIComponent(event.slug)}`,
     body,
+    siteConfig,
   });
 }
 
 function registrationPage(
   event,
-  { csrfToken, values = {}, errors = {}, turnstileSiteKey = '' } = {}
+  { csrfToken, values = {}, errors = {}, turnstileSiteKey = '', siteConfig = {} } = {}
 ) {
   const schedule = formatEventSchedule(event);
   const idempotencyKey = values.idempotencyKey || crypto.randomUUID();
@@ -305,14 +317,17 @@ function registrationPage(
     title: `Register for ${event.name}`,
     description: `Reserve a spot for ${event.name}.`,
     activePath: '/events',
+    canonicalPath: `/events/${encodeURIComponent(event.slug)}/register`,
+    noIndex: true,
     head: turnstileSiteKey
       ? '<link rel="preconnect" href="https://challenges.cloudflare.com" crossorigin><script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>'
       : '',
     body,
+    siteConfig,
   });
 }
 
-function confirmationPage(registration, { duplicate = false } = {}) {
+function confirmationPage(registration, { duplicate = false, siteConfig = {} } = {}) {
   const schedule = formatEventSchedule({
     startsAt: registration.starts_at,
     endsAt: registration.ends_at,
@@ -339,21 +354,29 @@ function confirmationPage(registration, { duplicate = false } = {}) {
     title: 'Registration confirmed',
     description: 'Your Autism: Bringing Change event registration is confirmed.',
     activePath: '/events',
+    canonicalPath: '',
+    noIndex: true,
     body,
+    siteConfig,
   });
 }
 
-function impactPage(past) {
+function impactPage(past, { siteConfig = {} } = {}) {
   const recordedRaised = past.reduce((total, event) => total + (event.fundsRaisedCents || 0), 0);
-  const partnerCollaborations = new Set(past.map((event) => event.partner).filter(Boolean)).size;
   const body = `<header class="page-intro impact-intro"><div class="shell intro-grid">
-      <div><p class="eyebrow eyebrow-dark">Our impact</p><h1>The work, documented.</h1></div>
-      <p>Every figure here is tied to ABC’s public event record. Events without a verified fundraising figure are listed without one.</p>
+      <div><p class="eyebrow eyebrow-dark">Our impact</p><h1>Small actions becoming shared momentum.</h1></div>
+      <p>ABC measures impact through participation, partnerships, service, and the events the community has built together.</p>
     </div></header>
     <section class="impact-summary"><div class="shell impact-stat-grid">
-      <div><strong>${past.length}</strong><span>events documented</span></div>
-      <div><strong>${partnerCollaborations}</strong><span>distinct partner collaborations</span></div>
-      <div><strong>${escapeHtml(recordedRaised > 0 ? `${formatMoney(recordedRaised)}+` : '—')}</strong><span>publicly recorded as raised</span></div>
+      <div><strong>200+</strong><span>community participants</span></div>
+      <div><strong>5</strong><span>publicly reported partnerships</span></div>
+      <div><strong>${past.length}</strong><span>completed events documented here</span></div>
+      <div><strong>${escapeHtml(recordedRaised > 0 ? `${formatMoney(recordedRaised)}+` : '—')}</strong><span>verified event fundraising recorded here</span></div>
+    </div><p class="impact-source">Participation and partnership figures come from ABC’s public organization profile. Fundraising appears only when an event total is verified.</p></section>
+    <section class="impact-stories"><div class="shell impact-story-grid">
+      <article><span class="story-orb orb-blue" aria-hidden="true"></span><p class="eyebrow eyebrow-dark">Inclusive events</p><h2>Connection through participation.</h2><p>Basketball, hiking, tennis, and pickleball have created welcoming ways for families, students, and supporters to spend time together.</p></article>
+      <article><span class="story-orb orb-yellow" aria-hidden="true"></span><p class="eyebrow eyebrow-dark">Practical service</p><h2>Support beyond event day.</h2><p>ABC’s public work includes sensory-kit donations, outreach, and student-led service projects designed around local needs.</p></article>
+      <article><span class="story-orb orb-red" aria-hidden="true"></span><p class="eyebrow eyebrow-dark">Recent work</p><h2>A bake sale built for connection.</h2><p>ABC and Chea Youth brought the Bake Sale for a Better Future to Aloravita Community on October 24, 2026, with treats, activities, and volunteer opportunities.</p><a class="text-link" href="${BAKE_SALE_POST_URL}" rel="noopener">View the event post <span aria-hidden="true">→</span></a></article>
     </div></section>
     <section class="impact-timeline"><div class="shell">
       <div class="section-heading"><h2>Event record</h2><span>Newest first</span></div>
@@ -367,17 +390,54 @@ function impactPage(past) {
           </li>`;
         }).join('')}
       </ol>
-    </div></section>`;
+    </div></section>
+    <section class="impact-cta"><div class="shell support-band-inner"><div><p class="eyebrow">Add to the momentum</p><h2>Help fund what comes next.</h2></div><div><p>Support ABC’s next event, outreach project, or student-led service effort.</p><a class="button button-light" href="/support">Support ABC</a></div></div></section>`;
 
   return page({
     title: 'Our impact',
-    description: 'See the community events and recorded fundraising behind Autism: Bringing Change.',
+    description: 'See the events, partnerships, service, and verified impact behind Autism: Bringing Change.',
     activePath: '/impact',
+    canonicalPath: '/impact',
     body,
+    siteConfig,
   });
 }
 
-function privacyPage(retentionDays = 30) {
+function supportPage({ siteConfig = {} } = {}) {
+  let givingMarkup;
+
+  if (siteConfig.zeffyDonationUrl) {
+    givingMarkup = `<div class="giving-ready"><p>ABC’s secure giving page is ready on Zeffy. You will finish your donation on Zeffy’s website.</p><a class="button button-blue" href="${escapeHtml(siteConfig.zeffyDonationUrl)}">Continue securely to Zeffy</a></div>`;
+  } else {
+    givingMarkup = `<div class="giving-pending"><p class="eyebrow eyebrow-dark">Giving page in progress</p><h2>Online donations are being connected.</h2><p>The support page is ready, but ABC has not published its Zeffy campaign link yet. You can still contact the team about supporting an upcoming project.</p><a class="button button-navy" href="mailto:autismbringingchange@gmail.com?subject=Supporting%20ABC">Contact ABC</a></div>`;
+  }
+
+  const body = `<header class="support-hero"><div class="shell support-hero-grid">
+      <div><p class="eyebrow">Support ABC</p><h1>Help the next idea become a real community project.</h1><p>Donations help ABC organize inclusive events, build outreach projects, and give student volunteers the resources to act.</p></div>
+      <div class="support-orbit" aria-hidden="true"><i></i><i></i><i></i><strong>ABC</strong></div>
+    </div></header>
+    <section class="ways-section"><div class="shell ways-grid">
+      <div><span>Give</span><p>Use the secure Zeffy campaign when it is live.</p></div>
+      <div><span>Partner</span><p>Bring a venue, expertise, volunteers, or community reach.</p></div>
+      <div><span>Participate</span><p>Join an event and help make the space welcoming.</p></div>
+    </div></section>
+    <section class="giving-section"><div class="shell giving-grid">
+      <div class="giving-copy"><p class="eyebrow eyebrow-dark">Secure online giving</p><h2>Support handled by Zeffy.</h2><p>Donation and payment details stay with Zeffy. The ABC website does not receive card information.</p></div>
+      <div>${givingMarkup}</div>
+    </div></section>
+    <section class="support-contact"><div class="shell support-contact-inner"><h2>Want to support ABC another way?</h2><p>For partnerships, in-kind support, volunteering, or event ideas, email <a href="mailto:autismbringingchange@gmail.com">autismbringingchange@gmail.com</a>.</p></div></section>`;
+
+  return page({
+    title: 'Support ABC',
+    description: 'Support Autism: Bringing Change through secure giving, partnership, volunteering, or participation.',
+    activePath: '/support',
+    canonicalPath: '/support',
+    body,
+    siteConfig,
+  });
+}
+
+function privacyPage(retentionDays = 30, { siteConfig = {} } = {}) {
   const body = `<article class="legal-page shell">
       <p class="eyebrow eyebrow-dark">Privacy</p>
       <h1>Only the details needed to run the event.</h1>
@@ -388,6 +448,8 @@ function privacyPage(retentionDays = 30) {
       <p>Registration records are automatically deleted ${retentionDays} days after the event. The public website does not provide an attendee list.</p>
       <h2>Protection from automated signups</h2>
       <p>When event registration is open, ABC uses Cloudflare Turnstile to protect limited event capacity from bots. Cloudflare processes technical signals such as an IP address, browser and network information, and the site origin to assess whether a submission is automated. Learn more in Cloudflare’s <a href="https://www.cloudflare.com/turnstile-privacy-policy/">Turnstile Privacy Addendum</a>.</p>
+      <h2>Donations through Zeffy</h2>
+      <p>When ABC’s donation campaign is active, Zeffy handles donation and payment details. The ABC website does not receive card information. Review <a href="https://www.zeffy.com/privacy">Zeffy’s privacy information</a> before donating.</p>
       <h2>Questions or deletion requests</h2>
       <p>Email <a href="mailto:autismbringingchange@gmail.com">autismbringingchange@gmail.com</a> to ask what information is held about your registration or request deletion.</p>
     </article>`;
@@ -395,15 +457,20 @@ function privacyPage(retentionDays = 30) {
     title: 'Privacy',
     description: 'How Autism: Bringing Change handles event registration information.',
     activePath: '/privacy',
+    canonicalPath: '/privacy',
     body,
+    siteConfig,
   });
 }
 
-function notFoundPage() {
+function notFoundPage({ siteConfig = {} } = {}) {
   return page({
     title: 'Page not found',
     description: 'The requested page could not be found.',
+    canonicalPath: '',
+    noIndex: true,
     body: `<section class="error-page shell"><p class="eyebrow eyebrow-dark">404</p><h1>That page isn’t here.</h1><p>Head back to the event list or the ABC homepage.</p><div><a class="button button-dark" href="/events">View events</a><a class="text-link" href="/">Go home <span aria-hidden="true">→</span></a></div></section>`,
+    siteConfig,
   });
 }
 
@@ -416,4 +483,5 @@ module.exports = {
   notFoundPage,
   privacyPage,
   registrationPage,
+  supportPage,
 };

@@ -29,17 +29,22 @@ const app = createApp({
   isProduction: config.isProduction,
   trustProxy: config.trustProxy,
   registrationRetentionDays: config.registrationRetentionDays,
+  siteConfig: config.site,
   turnstileSiteKey: config.turnstileSiteKey,
   registrationProtectionReady: config.registrationProtectionReady,
   verifyHuman: createTurnstileVerifier({
     secretKey: config.turnstileSecretKey,
-    expectedHostname: config.turnstileExpectedHostname,
+    expectedHostnames: config.turnstileExpectedHostnames,
   }),
 });
 
-const server = app.listen(config.port, () => {
-  console.log(`ABC website listening on port ${config.port}`);
-});
+const onListening = () => {
+  const hostLabel = config.host ? `${config.host}:` : '';
+  console.log(`ABC website listening on ${hostLabel}${config.port}`);
+};
+const server = config.host
+  ? app.listen(config.port, config.host, onListening)
+  : app.listen(config.port, onListening);
 
 const retentionTimer = setInterval(() => {
   pruneExpiredRegistrations(db, new Date(), config.registrationRetentionDays);

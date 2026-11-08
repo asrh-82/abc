@@ -20,6 +20,7 @@ const {
   notFoundPage,
   privacyPage,
   registrationPage,
+  supportPage,
 } = require('./views/pages');
 
 function createRateLimiter({ limit = 5, windowMs = 15 * 60 * 1000 } = {}) {
@@ -77,6 +78,7 @@ function createApp({
   isProduction = false,
   trustProxy = false,
   registrationRetentionDays = 30,
+  siteConfig = {},
   turnstileSiteKey = '',
   registrationProtectionReady = false,
   verifyHuman = async () => ({ ok: false, unavailable: true }),
@@ -248,19 +250,23 @@ function createApp({
 
   app.get('/', (req, res) => {
     res.set('Cache-Control', 'no-cache');
-    res.send(homePage(getEventCollections()));
+    res.send(homePage(getEventCollections(), { siteConfig }));
   });
 
   app.get('/events', (req, res) => {
     res.set('Cache-Control', 'no-store');
-    res.send(eventsPage(getEventCollections()));
+    res.send(eventsPage(getEventCollections(), { siteConfig }));
+  });
+
+  app.get('/support', (req, res) => {
+    res.send(supportPage({ siteConfig }));
   });
 
   app.get('/events/:slug', (req, res, next) => {
     res.set('Cache-Control', 'no-store');
     const event = getEvent(req.params.slug);
     if (!event) return next();
-    return res.send(eventDetailPage(event));
+    return res.send(eventDetailPage(event, { siteConfig }));
   });
 
   app.get('/events/:slug/register', (req, res, next) => {
@@ -269,7 +275,7 @@ function createApp({
     if (!event.registrationOpen) return res.redirect(303, `/events/${encodeURIComponent(event.slug)}`);
     const csrfToken = issueCsrfToken(req, res, isProduction);
     res.set('Cache-Control', 'no-store');
-    return res.send(registrationPage(event, { csrfToken, turnstileSiteKey }));
+    return res.send(registrationPage(event, { csrfToken, turnstileSiteKey, siteConfig }));
   });
 
   app.post('/events/:slug/register', registrationLimiter, asyncRoute(async (req, res, next) => {
@@ -291,6 +297,7 @@ function createApp({
         values: validation.values,
         errors: validation.errors,
         turnstileSiteKey,
+        siteConfig,
       }));
     }
 
@@ -305,6 +312,7 @@ function createApp({
           values: validation.values,
           errors: { form: 'This registration was cancelled. Contact ABC if you need help.' },
           turnstileSiteKey,
+          siteConfig,
         }));
       }
       return res.redirect(
@@ -327,6 +335,7 @@ function createApp({
             : 'Complete the human verification and try again.',
         },
         turnstileSiteKey,
+        siteConfig,
       }));
     }
 
@@ -348,6 +357,7 @@ function createApp({
           res.set('Cache-Control', 'no-store');
           return res.status(error.status).send(eventDetailPage(refreshedEvent, {
             notice: error.message,
+            siteConfig,
           }));
         }
         const csrfToken = issueCsrfToken(req, res, isProduction);
@@ -357,6 +367,7 @@ function createApp({
           values: validation.values,
           errors: { form: error.message },
           turnstileSiteKey,
+          siteConfig,
         }));
       }
       throw error;
@@ -367,16 +378,19 @@ function createApp({
     const registration = repositories.registrations.findByConfirmationCode(req.params.code);
     if (!registration) return next();
     res.set('Cache-Control', 'no-store');
-    return res.send(confirmationPage(registration, { duplicate: req.query.duplicate === '1' }));
+    return res.send(confirmationPage(registration, {
+      duplicate: req.query.duplicate === '1',
+      siteConfig,
+    }));
   });
 
   app.get('/impact', (req, res) => {
     const { past } = getEventCollections();
-    res.send(impactPage(past.filter((event) => event.status === 'completed')));
+    res.send(impactPage(past.filter((event) => event.status === 'completed'), { siteConfig }));
   });
 
   app.get('/privacy', (req, res) => {
-    res.send(privacyPage(registrationRetentionDays));
+    res.send(privacyPage(registrationRetentionDays, { siteConfig }));
   });
 
   app.use('/api', (req, res) => {
@@ -386,7 +400,7 @@ function createApp({
   });
 
   app.use((req, res) => {
-    res.status(404).send(notFoundPage());
+    res.status(404).send(notFoundPage({ siteConfig }));
   });
 
   app.use((error, req, res, next) => {

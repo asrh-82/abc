@@ -1,5 +1,6 @@
 const assert = require('node:assert/strict');
 const { execFileSync } = require('node:child_process');
+const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
 const crypto = require('node:crypto');
@@ -12,7 +13,7 @@ const {
   pruneExpiredRegistrations,
   syncEventsFromManifest,
 } = require('../src/db');
-const { loadEventManifest } = require('../src/event-manifest');
+const { validateEventManifest } = require('../src/event-manifest');
 const { SITEVERIFY_URL, createTurnstileVerifier } = require('../src/turnstile');
 
 const projectRoot = path.resolve(__dirname, '..');
@@ -21,9 +22,16 @@ const fixedNow = new Date('2026-09-03T12:00:00-07:00');
 async function startTestApp(t, configureDatabase = () => {}, appOptions = {}) {
   const db = openDatabase(':memory:');
   migrateDatabase(db, path.join(projectRoot, 'db', 'migrations'));
+  const manifestSource = JSON.parse(
+    fs.readFileSync(path.join(projectRoot, 'data', 'events.json'), 'utf8')
+  );
+  const fixtureEvents = manifestSource.filter((event) => {
+    if (event.status !== 'completed') return true;
+    return new Date(event.endsAt || event.startsAt) <= fixedNow;
+  });
   syncEventsFromManifest(
     db,
-    loadEventManifest(path.join(projectRoot, 'data', 'events.json'), { now: fixedNow })
+    validateEventManifest(fixtureEvents, { now: fixedNow })
   );
   configureDatabase(db);
 
@@ -90,9 +98,10 @@ test('homepage is impact-first when no event is confirmed', async (t) => {
   const html = await response.text();
 
   assert.equal(response.status, 200);
-  assert.match(html, /No upcoming event announced/);
-  assert.match(html, /There is no signup open right now/);
-  assert.match(html, />See our impact</);
+  assert.match(html, /No registration is open right now\./);
+  assert.match(html, /Community experiences that make belonging real\./);
+  assert.match(html, /200\+/);
+  assert.match(html, />See what ABC has done /);
   assert.doesNotMatch(html, />Find an event</);
 });
 
@@ -801,6 +810,34 @@ test('Turnstile verifier rejects the wrong action or hostname', async () => {
   });
 
   assert.deepEqual(await verifier({ token: 'browser-token' }), { ok: false });
+});
+
+test('Turnstile verifier accepts only reviewed hostnames from an allowlist', async () => {
+  let hostname = 'www.autismbringingchange.xyz';
+  const verifier = createTurnstileVerifier({
+    secretKey: 'server-secret',
+    expectedHostnames: ['autismbringingchange.xyz', 'www.autismbringingchange.xyz'],
+    fetchImpl: async () => ({
+      ok: true,
+      json: async () => ({
+        success: true,
+        action: 'event-registration',
+        hostname,
+      }),
+    }),
+  });
+
+  assert.deepEqual(await verifier({ token: 'first-token' }), { ok: true });
+  hostname = 'unreviewed-preview.vercel.app';
+  assert.deepEqual(await verifier({ token: 'second-token' }), { ok: false });
+});
+
+test('Turnstile verifier fails closed without a hostname allowlist', async () => {
+  const verifier = createTurnstileVerifier({ secretKey: 'server-secret' });
+  assert.deepEqual(
+    await verifier({ token: 'browser-token' }),
+    { ok: false, unavailable: true }
+  );
 });
 
 test('Turnstile verifier never bypasses a missing secret', async () => {
