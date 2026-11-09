@@ -145,17 +145,17 @@ test('static impact excludes cancelled events after their scheduled end', (t) =>
 
 test('Vercel previews keep the static site security headers', () => {
   assert.equal(vercelConfig.outputDirectory, 'dist');
-  const headers = new Map(
-    vercelConfig.headers[0].headers.map(({ key, value }) => [key, value])
-  );
-  assert.match(headers.get('Content-Security-Policy'), /form-action 'none'/);
-  assert.match(headers.get('Content-Security-Policy'), /frame-ancestors 'none'/);
-  assert.equal(headers.get('X-Content-Type-Options'), 'nosniff');
-  assert.equal(headers.get('X-Frame-Options'), 'DENY');
+  const headerRoute = vercelConfig.routes[0];
+  assert.equal(headerRoute.src, '/(.*)');
+  assert.equal(headerRoute.continue, true);
+  assert.match(headerRoute.headers['Content-Security-Policy'], /form-action 'none'/);
+  assert.match(headerRoute.headers['Content-Security-Policy'], /frame-ancestors 'none'/);
+  assert.equal(headerRoute.headers['X-Content-Type-Options'], 'nosniff');
+  assert.equal(headerRoute.headers['X-Frame-Options'], 'DENY');
 });
 
 test('Vercel serves the custom 404 for routes that are not static files', () => {
-  assert.deepEqual(vercelConfig.routes, [
+  assert.deepEqual(vercelConfig.routes.slice(1), [
     { handle: 'filesystem' },
     { src: '/(.*)', status: 404, dest: '/404.html' },
   ]);
