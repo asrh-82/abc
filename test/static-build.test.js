@@ -154,6 +154,13 @@ test('Vercel previews keep the static site security headers', () => {
   assert.equal(headers.get('X-Frame-Options'), 'DENY');
 });
 
+test('Vercel serves the custom 404 for routes that are not static files', () => {
+  assert.deepEqual(vercelConfig.routes, [
+    { handle: 'filesystem' },
+    { src: '/(.*)', status: 404, dest: '/404.html' },
+  ]);
+});
+
 test('foundation build publishes support, verified event content, assets, and no-index preview rules', (t) => {
   const outputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'abc-static-foundation-'));
   t.after(() => fs.rmSync(outputDirectory, { recursive: true, force: true }));
